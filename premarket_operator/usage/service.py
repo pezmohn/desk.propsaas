@@ -1,0 +1,1 @@
+"""Usage query service placeholder."""
