@@ -96,3 +96,4 @@ That result should drive the next engineering step. Until then, the product is c
 
 - [Live Day Runbook](live_day_runbook.md)
 - [Frontend Scope](frontend_scope.md)
+- [Frontend V1 Tickets](frontend_v1_tickets.md)
