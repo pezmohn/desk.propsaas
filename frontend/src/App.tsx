@@ -5,6 +5,7 @@ import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { DashboardPage } from "./pages/DashboardPage";
 
 const publicRoutes = new Set(["/login", "/forgot-password", "/reset-password"]);
 
@@ -93,13 +94,7 @@ function Redirect({
 
 function ProtectedPage({ path, userRole }: { path: string; userRole: "user" | "admin" }) {
   if (path === "/" || path === "/dashboard") {
-    return (
-      <PlaceholderPage
-        title="Dashboard"
-        eyebrow="Protected route"
-        description="This route is reserved for a later frontend ticket."
-      />
-    );
+    return <DashboardPage />;
   }
 
   if (path === "/reports") {

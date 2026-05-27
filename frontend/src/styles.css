@@ -269,6 +269,149 @@ input:focus {
   max-width: 620px;
 }
 
+.dashboard-page {
+  display: grid;
+  gap: 24px;
+  max-width: 1040px;
+}
+
+.dashboard-header {
+  border-bottom: 1px solid #dde5dd;
+  padding-bottom: 20px;
+}
+
+.status-summary {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dde5dd;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: 14px 16px;
+}
+
+.status-summary span {
+  color: #637063;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.status-summary strong {
+  color: #1d2520;
+  font-size: 14px;
+  text-align: right;
+}
+
+.status-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.status-card {
+  background: #ffffff;
+  border: 1px solid #dde5dd;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  min-height: 160px;
+  padding: 18px;
+}
+
+.status-card:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.status-card-heading {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.status-card h2 {
+  font-size: 15px;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.status-dot {
+  border-radius: 999px;
+  display: inline-flex;
+  height: 10px;
+  width: 10px;
+}
+
+.status-dot.ready {
+  background: #1b7f4c;
+}
+
+.status-dot.pending,
+.status-dot.unknown {
+  background: #8d9288;
+}
+
+.status-dot.blocked {
+  background: #b34a24;
+}
+
+.status-value {
+  color: #1d2520;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.status-detail {
+  color: #526056;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.dashboard-message {
+  background: #ffffff;
+  border: 1px solid #dde5dd;
+  border-radius: 8px;
+  color: #38433b;
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+}
+
+.dashboard-message.error {
+  background: #fff3ef;
+  border-color: #f0b7a3;
+  color: #8d3218;
+}
+
+.skeleton-card span,
+.skeleton-card strong,
+.skeleton-card p {
+  background: #e8eee8;
+  border-radius: 6px;
+  display: block;
+}
+
+.skeleton-card span {
+  height: 16px;
+  width: 42%;
+}
+
+.skeleton-card strong {
+  height: 28px;
+  width: 70%;
+}
+
+.skeleton-card p {
+  height: 44px;
+  margin: 0;
+  width: 100%;
+}
+
 @media (max-width: 760px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -290,5 +433,18 @@ input:focus {
 
   .content-shell {
     padding: 24px;
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .status-summary {
+    align-items: flex-start;
+    display: grid;
+  }
+
+  .status-summary strong {
+    text-align: left;
   }
 }
