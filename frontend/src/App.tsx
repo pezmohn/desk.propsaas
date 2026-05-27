@@ -6,6 +6,8 @@ import { LoginPage } from "./pages/LoginPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { ReportsPage } from "./pages/ReportsPage";
+import { ReportDetailPage } from "./pages/ReportDetailPage";
 
 const publicRoutes = new Set(["/login", "/forgot-password", "/reset-password"]);
 
@@ -73,7 +75,7 @@ export function App() {
 
   return (
     <AppShell activePath={route.path} navigate={navigate}>
-      <ProtectedPage path={route.path} userRole={user?.role || "user"} />
+      <ProtectedPage path={route.path} userRole={user?.role || "user"} navigate={navigate} />
     </AppShell>
   );
 }
@@ -92,19 +94,26 @@ function Redirect({
   return null;
 }
 
-function ProtectedPage({ path, userRole }: { path: string; userRole: "user" | "admin" }) {
+function ProtectedPage({
+  path,
+  userRole,
+  navigate,
+}: {
+  path: string;
+  userRole: "user" | "admin";
+  navigate(to: string, options?: { replace?: boolean }): void;
+}) {
   if (path === "/" || path === "/dashboard") {
     return <DashboardPage />;
   }
 
   if (path === "/reports") {
-    return (
-      <PlaceholderPage
-        title="Reports"
-        eyebrow="Protected route"
-        description="This route is reserved for a later frontend ticket."
-      />
-    );
+    return <ReportsPage navigate={navigate} />;
+  }
+
+  if (path.startsWith("/reports/")) {
+    const reportId = decodeURIComponent(path.replace("/reports/", ""));
+    return <ReportDetailPage reportId={reportId} navigate={navigate} />;
   }
 
   if (path === "/settings") {
