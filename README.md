@@ -18,3 +18,4 @@ See [docs/runtime.md](docs/runtime.md) for the local Python runtime and dry-run 
 See [docs/live_test.md](docs/live_test.md) for the first one-user live Telegram test checklist.
 See [docs/project_status.md](docs/project_status.md) for the current MVP status and next-priority checklist.
 See [docs/frontend_scope.md](docs/frontend_scope.md) for the recommended first frontend scope.
+See [docs/frontend_v1_tickets.md](docs/frontend_v1_tickets.md) for the concrete frontend build order.
