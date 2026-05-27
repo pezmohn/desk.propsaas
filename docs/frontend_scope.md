@@ -207,3 +207,8 @@ Frontend V1 is done when:
 Build the frontend soon, but keep it thin.
 
 The right V1 is a control panel for trust, delivery visibility, and operational clarity. It is not yet a full trading product interface.
+
+## Related Docs
+
+- [Project Status](project_status.md)
+- [Frontend V1 Tickets](frontend_v1_tickets.md)
