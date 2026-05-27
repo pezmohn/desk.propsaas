@@ -4,3 +4,8 @@ __pycache__/
 .ruff_cache/
 .env
 state/
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+*.tsbuildinfo
