@@ -91,3 +91,8 @@ Run and monitor the live-day check during the next real New York send window, th
 - state blocker: dedupe or prior state prevented the intended send
 
 That result should drive the next engineering step. Until then, the product is close, but not yet operationally proven on the one path that matters most.
+
+## Related Docs
+
+- [Live Day Runbook](live_day_runbook.md)
+- [Frontend Scope](frontend_scope.md)
