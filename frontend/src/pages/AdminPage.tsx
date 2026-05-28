@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiErrorMessage } from "../api/apiClient";
 import { getAdminLiveDay } from "../admin/adminClient";
 import type { AdminLiveDayReadModel, AdminLiveDayUserRow } from "../admin/adminTypes";
 import { formatDateTime, formatTradingDay } from "./ReportsPage";
@@ -24,7 +25,7 @@ export function AdminPage() {
         if (!active) return;
         setState({
           status: "error",
-          message: error instanceof Error ? error.message : "Admin live-day status could not be loaded.",
+          message: apiErrorMessage(error, "Admin live-day status could not be loaded."),
         });
       });
 
@@ -38,7 +39,7 @@ export function AdminPage() {
       <div className="page-header admin-header">
         <p className="eyebrow">Admin</p>
         <h1 id="admin-title">Live-day operations</h1>
-        <p>Read-only delivery visibility for today’s premarket report run.</p>
+        <p>Read-only delivery visibility for today's premarket report run.</p>
       </div>
 
       {state.status === "loading" ? <AdminLoading /> : null}

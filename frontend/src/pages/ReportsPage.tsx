@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiErrorMessage } from "../api/apiClient";
 import { listReports } from "../reports/reportClient";
 import type { ReportListItem } from "../reports/reportTypes";
 
@@ -27,7 +28,7 @@ export function ReportsPage({ navigate }: ReportsPageProps) {
         if (!active) return;
         setState({
           status: "error",
-          message: error instanceof Error ? error.message : "Reports could not be loaded.",
+          message: apiErrorMessage(error, "Reports could not be loaded."),
         });
       });
 
@@ -64,7 +65,7 @@ function ReportList({ reports, navigate }: { reports: ReportListItem[]; navigate
             <h2>{report.title}</h2>
             <p className="report-meta">
               Generated {formatDateTime(report.generatedAt)}
-              {report.sentAt ? ` · Sent ${formatDateTime(report.sentAt)}` : ""}
+              {report.sentAt ? ` - Sent ${formatDateTime(report.sentAt)}` : ""}
             </p>
           </div>
 

@@ -63,5 +63,9 @@ export function AppShell({ activePath, navigate, children }: AppShellProps) {
 }
 
 function isActive(activePath: string, itemPath: string) {
-  return activePath === itemPath || (itemPath === "/dashboard" && activePath === "/");
+  return (
+    activePath === itemPath ||
+    (itemPath === "/dashboard" && activePath === "/") ||
+    (itemPath === "/reports" && activePath.startsWith("/reports/"))
+  );
 }

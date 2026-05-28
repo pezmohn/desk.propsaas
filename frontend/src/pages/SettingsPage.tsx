@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiErrorMessage } from "../api/apiClient";
 import { getUserSettings } from "../settings/settingsClient";
 import type { TelegramConnectionState, UserSettingsReadModel } from "../settings/settingsTypes";
 
@@ -23,7 +24,7 @@ export function SettingsPage() {
         if (!active) return;
         setState({
           status: "error",
-          message: error instanceof Error ? error.message : "Settings could not be loaded.",
+          message: apiErrorMessage(error, "Settings could not be loaded."),
         });
       });
 

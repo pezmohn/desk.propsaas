@@ -46,6 +46,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       async login(input) {
         const loggedInUser = await authClient.login(input);
+        if (!loggedInUser?.id || !loggedInUser.email) {
+          throw new Error("Login did not return a valid user session.");
+        }
         setUser(loggedInUser);
         setStatus("authenticated");
       },

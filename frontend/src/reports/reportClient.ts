@@ -1,7 +1,9 @@
 import type { ReportDetail, ReportListItem } from "./reportTypes";
+import { requestJson } from "../api/apiClient";
+import { asRecord, readArray, readNullableString, readString } from "../api/normalize";
+import type { ReportDeliveryStatus } from "./reportTypes";
 
 const reportsMode = import.meta.env.VITE_REPORTS_MODE || "local";
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
 const reportsListPath = import.meta.env.VITE_REPORTS_LIST_PATH;
 const reportDetailPath = import.meta.env.VITE_REPORT_DETAIL_PATH;
 
@@ -49,15 +51,8 @@ async function listApiReports(): Promise<ReportListItem[]> {
     throw new Error("VITE_REPORTS_MODE=api requires VITE_REPORTS_LIST_PATH.");
   }
 
-  const response = await fetch(`${apiBaseUrl}${reportsListPath}`, {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Reports request failed with ${response.status}.`);
-  }
-
-  return (await response.json()) as ReportListItem[];
+  const payload = await requestJson(reportsListPath);
+  return normalizeReportList(payload);
 }
 
 async function getApiReportDetail(reportId: string): Promise<ReportDetail | null> {
@@ -66,17 +61,51 @@ async function getApiReportDetail(reportId: string): Promise<ReportDetail | null
   }
 
   const path = reportDetailPath.replace(":reportId", encodeURIComponent(reportId));
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    credentials: "include",
-  });
+  const payload = await requestJson(path, { notFoundAsNull: true });
+  return payload ? normalizeReportDetail(payload) : null;
+}
 
-  if (response.status === 404) {
-    return null;
+function normalizeReportList(payload: unknown): ReportListItem[] {
+  const records = Array.isArray(payload) ? payload : readArray(asRecord(payload, "Reports response"), "reports");
+  return records.map(normalizeReportListItem);
+}
+
+function normalizeReportListItem(value: unknown): ReportListItem {
+  const record = asRecord(value, "Report list item");
+
+  return {
+    id: readString(record, "id"),
+    tradingDay: readString(record, "tradingDay"),
+    title: readString(record, "title", "Premarket Report"),
+    deliveryStatus: normalizeDeliveryStatus(readString(record, "deliveryStatus", "unknown")),
+    sentAt: readNullableString(record, "sentAt"),
+    generatedAt: readString(record, "generatedAt"),
+  };
+}
+
+function normalizeReportDetail(payload: unknown): ReportDetail {
+  const record = asRecord(payload, "Report detail");
+
+  return {
+    ...normalizeReportListItem(record),
+    bodyText: readString(record, "bodyText", ""),
+  };
+}
+
+function normalizeDeliveryStatus(value: string): ReportDeliveryStatus {
+  const normalized = value.toLowerCase().replace("-", "_");
+  if (normalized === "sent" || normalized === "delivered") {
+    return "sent";
+  }
+  if (normalized === "pending" || normalized === "queued") {
+    return "pending";
+  }
+  if (normalized === "failed" || normalized === "error") {
+    return "failed";
+  }
+  if (normalized === "not_sent" || normalized === "unsent") {
+    return "not_sent";
   }
 
-  if (!response.ok) {
-    throw new Error(`Report detail request failed with ${response.status}.`);
-  }
-
-  return (await response.json()) as ReportDetail;
+  return "unknown";
 }

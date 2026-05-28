@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiErrorMessage } from "../api/apiClient";
 import { getUserDashboard } from "../dashboard/dashboardClient";
 import type { DashboardStatusItem, UserDashboardReadModel } from "../dashboard/dashboardTypes";
 
@@ -23,7 +24,7 @@ export function DashboardPage() {
         if (!active) return;
         setState({
           status: "error",
-          message: error instanceof Error ? error.message : "Dashboard status could not be loaded.",
+          message: apiErrorMessage(error, "Dashboard status could not be loaded."),
         });
       });
 

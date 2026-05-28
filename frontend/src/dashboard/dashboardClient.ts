@@ -1,7 +1,9 @@
 import type { UserDashboardReadModel } from "./dashboardTypes";
+import { requestJson } from "../api/apiClient";
+import { asRecord, readArray, readString } from "../api/normalize";
+import type { DashboardStatusItem, DashboardStatusTone } from "./dashboardTypes";
 
 const dashboardMode = import.meta.env.VITE_DASHBOARD_MODE || "local";
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
 const dashboardStatusPath = import.meta.env.VITE_DASHBOARD_STATUS_PATH;
 
 export async function getUserDashboard(): Promise<UserDashboardReadModel | null> {
@@ -17,19 +19,8 @@ async function getApiDashboard(): Promise<UserDashboardReadModel | null> {
     throw new Error("VITE_DASHBOARD_MODE=api requires VITE_DASHBOARD_STATUS_PATH.");
   }
 
-  const response = await fetch(`${apiBaseUrl}${dashboardStatusPath}`, {
-    credentials: "include",
-  });
-
-  if (response.status === 404) {
-    return null;
-  }
-
-  if (!response.ok) {
-    throw new Error(`Dashboard request failed with ${response.status}.`);
-  }
-
-  return (await response.json()) as UserDashboardReadModel;
+  const payload = await requestJson(dashboardStatusPath, { notFoundAsNull: true });
+  return payload ? normalizeDashboard(payload) : null;
 }
 
 function getLocalDashboard(): UserDashboardReadModel {
@@ -73,4 +64,43 @@ function getLocalDashboard(): UserDashboardReadModel {
       },
     ],
   };
+}
+
+function normalizeDashboard(payload: unknown): UserDashboardReadModel {
+  const record = asRecord(payload, "Dashboard read model");
+  const items = readArray(record, "items").map(normalizeDashboardItem);
+
+  return {
+    generatedAt: readString(record, "generatedAt", new Date().toISOString()),
+    items,
+  };
+}
+
+function normalizeDashboardItem(value: unknown): DashboardStatusItem {
+  const record = asRecord(value, "Dashboard status item");
+  const id = normalizeDashboardItemId(readString(record, "id"));
+
+  return {
+    id,
+    label: readString(record, "label"),
+    value: readString(record, "value", "Unavailable"),
+    detail: readString(record, "detail", ""),
+    tone: normalizeTone(readString(record, "tone", "unknown")),
+  };
+}
+
+function normalizeDashboardItemId(value: string): DashboardStatusItem["id"] {
+  if (["plan", "telegram", "report", "delivery", "blocker"].includes(value)) {
+    return value as DashboardStatusItem["id"];
+  }
+
+  return "blocker";
+}
+
+function normalizeTone(value: string): DashboardStatusTone {
+  if (value === "ready" || value === "pending" || value === "blocked" || value === "unknown") {
+    return value;
+  }
+
+  return "unknown";
 }

@@ -115,6 +115,9 @@ function ProtectedPage({
 
   if (path.startsWith("/reports/")) {
     const reportId = decodeURIComponent(path.replace("/reports/", ""));
+    if (!reportId) {
+      return <Redirect to="/reports" navigate={navigate} />;
+    }
     return <ReportDetailPage reportId={reportId} navigate={navigate} />;
   }
 

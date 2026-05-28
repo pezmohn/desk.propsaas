@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiErrorMessage } from "../api/apiClient";
 import { getReportDetail } from "../reports/reportClient";
 import type { ReportDetail } from "../reports/reportTypes";
 import { formatDateTime, formatDeliveryStatus, formatTradingDay } from "./ReportsPage";
@@ -29,7 +30,7 @@ export function ReportDetailPage({ reportId, navigate }: ReportDetailPageProps) 
         if (!active) return;
         setState({
           status: "error",
-          message: error instanceof Error ? error.message : "Report detail could not be loaded.",
+          message: apiErrorMessage(error, "Report detail could not be loaded."),
         });
       });
 

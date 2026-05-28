@@ -1,7 +1,9 @@
 import type { UserSettingsReadModel } from "./settingsTypes";
+import { requestJson } from "../api/apiClient";
+import { asRecord, readNullableString, readString } from "../api/normalize";
+import type { TelegramConnectionState } from "./settingsTypes";
 
 const settingsMode = import.meta.env.VITE_SETTINGS_MODE || "local";
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
 const settingsStatusPath = import.meta.env.VITE_SETTINGS_STATUS_PATH;
 
 export async function getUserSettings(): Promise<UserSettingsReadModel | null> {
@@ -17,19 +19,8 @@ async function getApiSettings(): Promise<UserSettingsReadModel | null> {
     throw new Error("VITE_SETTINGS_MODE=api requires VITE_SETTINGS_STATUS_PATH.");
   }
 
-  const response = await fetch(`${apiBaseUrl}${settingsStatusPath}`, {
-    credentials: "include",
-  });
-
-  if (response.status === 404) {
-    return null;
-  }
-
-  if (!response.ok) {
-    throw new Error(`Settings request failed with ${response.status}.`);
-  }
-
-  return (await response.json()) as UserSettingsReadModel;
+  const payload = await requestJson(settingsStatusPath, { notFoundAsNull: true });
+  return payload ? normalizeSettings(payload) : null;
 }
 
 function getLocalSettings(): UserSettingsReadModel {
@@ -52,4 +43,42 @@ function getLocalSettings(): UserSettingsReadModel {
         "Telegram status will show connected once the backend returns a linked chat identity. Use the current manual linking process until the connection flow is finalized.",
     },
   };
+}
+
+function normalizeSettings(payload: unknown): UserSettingsReadModel {
+  const record = asRecord(payload, "Settings read model");
+  const profile = asRecord(record.profile, "Settings profile");
+  const account = asRecord(record.account, "Settings account");
+  const telegram = asRecord(record.telegram, "Settings Telegram");
+
+  return {
+    profile: {
+      email: readString(profile, "email"),
+      displayName: readNullableString(profile, "displayName"),
+      timezone: readString(profile, "timezone", "America/New_York"),
+    },
+    account: {
+      status: readString(account, "status", "Unknown"),
+      planName: readString(account, "planName", "Unknown"),
+      planStatus: readString(account, "planStatus", "Unknown"),
+    },
+    telegram: {
+      state: normalizeTelegramState(readString(telegram, "state", "incomplete")),
+      username: readNullableString(telegram, "username"),
+      chatId: readNullableString(telegram, "chatId"),
+      guidance: readString(telegram, "guidance", "Telegram connection status is unavailable."),
+    },
+  };
+}
+
+function normalizeTelegramState(value: string): TelegramConnectionState {
+  const normalized = value.toLowerCase().replace("-", "_");
+  if (normalized === "connected" || normalized === "linked") {
+    return "connected";
+  }
+  if (normalized === "not_connected" || normalized === "unlinked" || normalized === "missing") {
+    return "not_connected";
+  }
+
+  return "incomplete";
 }

@@ -1,7 +1,8 @@
 import type { AdminLiveDayReadModel, AdminLiveDayUserRow } from "./adminTypes";
+import { requestJson } from "../api/apiClient";
+import { asRecord, readArray, readBoolean, readNullableString, readNumber, readString } from "../api/normalize";
 
 const adminMode = import.meta.env.VITE_ADMIN_MODE || "local";
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
 const adminLiveDayPath = import.meta.env.VITE_ADMIN_LIVE_DAY_PATH;
 
 export async function getAdminLiveDay(): Promise<AdminLiveDayReadModel | null> {
@@ -17,19 +18,8 @@ async function getApiAdminLiveDay(): Promise<AdminLiveDayReadModel | null> {
     throw new Error("VITE_ADMIN_MODE=api requires VITE_ADMIN_LIVE_DAY_PATH.");
   }
 
-  const response = await fetch(`${apiBaseUrl}${adminLiveDayPath}`, {
-    credentials: "include",
-  });
-
-  if (response.status === 404) {
-    return null;
-  }
-
-  if (!response.ok) {
-    throw new Error(`Admin live-day request failed with ${response.status}.`);
-  }
-
-  return (await response.json()) as AdminLiveDayReadModel;
+  const payload = await requestJson(adminLiveDayPath, { notFoundAsNull: true });
+  return payload ? normalizeAdminLiveDay(payload) : null;
 }
 
 function getLocalAdminLiveDay(): AdminLiveDayReadModel {
@@ -71,6 +61,48 @@ function getLocalAdminLiveDay(): AdminLiveDayReadModel {
     generatedAt: new Date().toISOString(),
     summary: summarizeUsers(users),
     users,
+  };
+}
+
+function normalizeAdminLiveDay(payload: unknown): AdminLiveDayReadModel {
+  const record = asRecord(payload, "Admin live-day read model");
+  const users = readArray(record, "users").map(normalizeAdminUser);
+  const summary = record.summary ? normalizeSummary(record.summary, users) : summarizeUsers(users);
+
+  return {
+    tradingDay: readString(record, "tradingDay", todayIsoDate()),
+    generatedAt: readString(record, "generatedAt", new Date().toISOString()),
+    summary,
+    users,
+  };
+}
+
+function normalizeAdminUser(value: unknown): AdminLiveDayUserRow {
+  const record = asRecord(value, "Admin live-day user");
+
+  return {
+    userId: readString(record, "userId"),
+    email: readString(record, "email"),
+    displayName: readNullableString(record, "displayName"),
+    eligible: readBoolean(record, "eligible"),
+    telegramLinked: readBoolean(record, "telegramLinked"),
+    reportGenerated: readBoolean(record, "reportGenerated"),
+    reportSent: readBoolean(record, "reportSent"),
+    blocker: readNullableString(record, "blocker"),
+  };
+}
+
+function normalizeSummary(value: unknown, users: AdminLiveDayUserRow[]) {
+  const record = asRecord(value, "Admin live-day summary");
+  const fallback = summarizeUsers(users);
+
+  return {
+    totalUsers: readNumber(record, "totalUsers", fallback.totalUsers),
+    eligibleUsers: readNumber(record, "eligibleUsers", fallback.eligibleUsers),
+    linkedUsers: readNumber(record, "linkedUsers", fallback.linkedUsers),
+    reportsGenerated: readNumber(record, "reportsGenerated", fallback.reportsGenerated),
+    reportsSent: readNumber(record, "reportsSent", fallback.reportsSent),
+    blockedUsers: readNumber(record, "blockedUsers", fallback.blockedUsers),
   };
 }
 

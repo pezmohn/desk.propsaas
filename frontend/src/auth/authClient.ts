@@ -6,11 +6,12 @@ import type {
   LoginInput,
   ResetPasswordInput,
 } from "./authTypes";
+import { requestJson } from "../api/apiClient";
+import { asRecord, readNullableString, readString } from "../api/normalize";
 
 const localSessionKey = "desk-propsaas.local-auth-user";
 
 const authMode = import.meta.env.VITE_AUTH_MODE || "local";
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
 const apiEndpoints = {
   me: import.meta.env.VITE_AUTH_ME_PATH,
   login: import.meta.env.VITE_AUTH_LOGIN_PATH,
@@ -23,13 +24,26 @@ export const authClient: AuthClient = authMode === "api" ? createApiAuthClient()
 
 function createApiAuthClient(): AuthClient {
   return {
-    getCurrentUser: () => request<AuthUser | null>(requireApiEndpoint("me"), { method: "GET" }),
-    login: (input) => request<AuthUser>(requireApiEndpoint("login"), { method: "POST", body: input }),
-    logout: () => request<void>(requireApiEndpoint("logout"), { method: "POST" }),
-    forgotPassword: (input) =>
-      request<void>(requireApiEndpoint("forgotPassword"), { method: "POST", body: input }),
-    resetPassword: (input) =>
-      request<void>(requireApiEndpoint("resetPassword"), { method: "POST", body: input }),
+    async getCurrentUser() {
+      const payload = await requestJson(requireApiEndpoint("me"), {
+        method: "GET",
+        unauthorizedAsNull: true,
+      });
+      return payload ? normalizeAuthUser(payload) : null;
+    },
+    async login(input) {
+      const payload = await requestJson(requireApiEndpoint("login"), { method: "POST", body: input });
+      return normalizeAuthUser(payload);
+    },
+    async logout() {
+      await requestJson(requireApiEndpoint("logout"), { method: "POST" });
+    },
+    async forgotPassword(input) {
+      await requestJson(requireApiEndpoint("forgotPassword"), { method: "POST", body: input });
+    },
+    async resetPassword(input) {
+      await requestJson(requireApiEndpoint("resetPassword"), { method: "POST", body: input });
+    },
   };
 }
 
@@ -37,7 +51,7 @@ function createLocalAuthClient(): AuthClient {
   return {
     async getCurrentUser() {
       const raw = window.localStorage.getItem(localSessionKey);
-      return raw ? (JSON.parse(raw) as AuthUser) : null;
+      return raw ? normalizeAuthUser(JSON.parse(raw)) : null;
     },
 
     async login(input: LoginInput) {
@@ -73,32 +87,20 @@ function createLocalAuthClient(): AuthClient {
   };
 }
 
-async function request<T>(path: string, options: { method: string; body?: unknown }): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    method: options.method,
-    credentials: "include",
-    headers: options.body ? { "Content-Type": "application/json" } : undefined,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-
-  if (response.status === 401) {
-    return null as T;
-  }
-
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Auth request failed with ${response.status}`);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
-}
-
 function localRole(): AuthRole {
   return import.meta.env.VITE_LOCAL_AUTH_ROLE === "admin" ? "admin" : "user";
+}
+
+function normalizeAuthUser(payload: unknown): AuthUser {
+  const record = asRecord(payload, "Auth user");
+  const role = readString(record, "role", "user");
+
+  return {
+    id: readString(record, "id"),
+    email: readString(record, "email"),
+    displayName: readNullableString(record, "displayName") || undefined,
+    role: role === "admin" ? "admin" : "user",
+  };
 }
 
 function requireApiEndpoint(endpoint: keyof typeof apiEndpoints): string {
