@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { authClient } from "./authClient";
 import type { AuthUser, ForgotPasswordInput, LoginInput, ResetPasswordInput } from "./authTypes";
 
-type AuthStatus = "loading" | "authenticated" | "anonymous";
+export type AuthStatus = "loading" | "authenticated" | "anonymous";
 
 type AuthContextValue = {
   status: AuthStatus;
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then((currentUser) => {
         if (!active) return;
         setUser(currentUser);
-        setStatus(currentUser ? "authenticated" : "anonymous");
+        setStatus(authStatusForUser(currentUser));
       })
       .catch(() => {
         if (!active) return;
@@ -46,9 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       async login(input) {
         const loggedInUser = await authClient.login(input);
-        if (!loggedInUser?.id || !loggedInUser.email) {
-          throw new Error("Login did not return a valid user session.");
-        }
+        assertValidLoginUser(loggedInUser);
         setUser(loggedInUser);
         setStatus("authenticated");
       },
@@ -72,4 +70,14 @@ export function useAuth() {
     throw new Error("useAuth must be used inside AuthProvider.");
   }
   return context;
+}
+
+export function authStatusForUser(user: AuthUser | null): AuthStatus {
+  return user ? "authenticated" : "anonymous";
+}
+
+export function assertValidLoginUser(user: AuthUser | null): asserts user is AuthUser {
+  if (!user?.id || !user.email) {
+    throw new Error("Login did not return a valid user session.");
+  }
 }

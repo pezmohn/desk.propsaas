@@ -10,8 +10,13 @@ import { ReportsPage } from "./pages/ReportsPage";
 import { ReportDetailPage } from "./pages/ReportDetailPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { AdminPage } from "./pages/AdminPage";
-
-const publicRoutes = new Set(["/login", "/forgot-password", "/reset-password"]);
+import {
+  authenticatedLoginRedirect,
+  canAccessAdmin,
+  isPublicRoute,
+  resolveReportRoute,
+  unauthenticatedRedirectFor,
+} from "./router/routeGuards";
 
 type Route = {
   path: string;
@@ -51,16 +56,14 @@ export function App() {
     return <div className="boot-screen">Loading desk...</div>;
   }
 
-  const isPublic = publicRoutes.has(route.path);
+  const isPublic = isPublicRoute(route.path);
 
   if (!user && !isPublic) {
-    const next = encodeURIComponent(`${route.path}${route.search}`);
-    return <Redirect to={`/login?next=${next}`} navigate={navigate} />;
+    return <Redirect to={unauthenticatedRedirectFor(route.path, route.search)} navigate={navigate} />;
   }
 
   if (user && route.path === "/login") {
-    const params = new URLSearchParams(route.search);
-    return <Redirect to={params.get("next") || "/"} navigate={navigate} />;
+    return <Redirect to={authenticatedLoginRedirect(route.search)} navigate={navigate} />;
   }
 
   if (route.path === "/login") {
@@ -113,12 +116,12 @@ function ProtectedPage({
     return <ReportsPage navigate={navigate} />;
   }
 
-  if (path.startsWith("/reports/")) {
-    const reportId = decodeURIComponent(path.replace("/reports/", ""));
-    if (!reportId) {
-      return <Redirect to="/reports" navigate={navigate} />;
-    }
-    return <ReportDetailPage reportId={reportId} navigate={navigate} />;
+  const reportRoute = resolveReportRoute(path);
+  if (reportRoute.kind === "redirect") {
+    return <Redirect to={reportRoute.to} navigate={navigate} />;
+  }
+  if (reportRoute.kind === "detail") {
+    return <ReportDetailPage reportId={reportRoute.reportId} navigate={navigate} />;
   }
 
   if (path === "/settings") {
@@ -126,7 +129,7 @@ function ProtectedPage({
   }
 
   if (path === "/admin") {
-    if (userRole !== "admin") {
+    if (!canAccessAdmin(userRole)) {
       return (
         <PlaceholderPage
           title="Not found"
