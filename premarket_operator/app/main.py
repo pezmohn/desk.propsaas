@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 
+from premarket_operator.auth.api import router as auth_router
 from premarket_operator.core.config import get_settings
 from premarket_operator.core.time import trading_day_for
 from premarket_operator.db.session import SessionLocal
@@ -7,6 +9,15 @@ from premarket_operator.telegram.client import TelegramClient
 from premarket_operator.telegram.webhook import TelegramWebhookError, process_telegram_webhook_update
 
 app = FastAPI(title="Premarket Operator")
+settings = get_settings()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=list(settings.cors_allowed_origins),
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
+app.include_router(auth_router)
 
 
 @app.get("/health")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import getpass
 import json
 import os
 from datetime import date
@@ -9,6 +10,7 @@ from uuid import UUID
 
 from sqlalchemy import select
 
+from premarket_operator.auth.service import set_user_password
 from premarket_operator.core.config import get_settings
 from premarket_operator.core.time import now_utc
 from premarket_operator.chat.service import answer_inbound_report_reply
@@ -314,6 +316,26 @@ def check_config(args: argparse.Namespace) -> int:
     return 0
 
 
+def set_password(args: argparse.Namespace) -> int:
+    create_all_tables()
+    password = args.password or getpass.getpass("Password: ")
+    with SessionLocal() as session:
+        user = _resolve_user(session, user_id=args.user_id, email=args.email)
+        set_user_password(session, user=user, password=password)
+        session.commit()
+        print(
+            json.dumps(
+                {
+                    "user_id": str(user.id),
+                    "email": user.email,
+                    "password_set": True,
+                },
+                indent=2,
+            )
+        )
+    return 0
+
+
 def _build_simulated_update(
     *,
     chat_id: str,
@@ -415,6 +437,12 @@ def parse_args() -> argparse.Namespace:
 
     config = sub.add_parser("check-config", help="Show runtime config without printing secrets")
     config.set_defaults(func=check_config)
+
+    password = sub.add_parser("set-password", help="Set a browser login password for one user")
+    password.add_argument("--user-id", default=None)
+    password.add_argument("--email", default=None)
+    password.add_argument("--password", default=None)
+    password.set_defaults(func=set_password)
 
     return parser.parse_args()
 

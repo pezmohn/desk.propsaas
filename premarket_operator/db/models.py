@@ -29,6 +29,7 @@ class User(Base):
     id: Mapped[uuid.UUID] = uuid_pk()
     email: Mapped[str | None] = mapped_column(String(320), unique=True)
     display_name: Mapped[str | None] = mapped_column(String(200))
+    password_hash: Mapped[str | None] = mapped_column(String(255))
     telegram_chat_id: Mapped[str | None] = mapped_column(String(64), unique=True)
     telegram_username: Mapped[str | None] = mapped_column(String(128))
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
@@ -40,6 +41,25 @@ class User(Base):
 
     daily_reports: Mapped[list[DailyReport]] = relationship(back_populates="user")
     user_plans: Mapped[list[UserPlan]] = relationship(back_populates="user")
+    auth_sessions: Mapped[list[AuthSession]] = relationship(back_populates="user")
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+    __table_args__ = (
+        Index("ix_auth_sessions_user_active", "user_id", "expires_at", "revoked_at"),
+        Index("uq_auth_sessions_token_hash", "token_hash", unique=True),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID_TYPE, ForeignKey("users.id"), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = timestamp_column()
+
+    user: Mapped[User] = relationship(back_populates="auth_sessions")
 
 
 class Plan(Base):
