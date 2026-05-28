@@ -8,6 +8,7 @@ import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { ReportDetailPage } from "./pages/ReportDetailPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 const publicRoutes = new Set(["/login", "/forgot-password", "/reset-password"]);
 
@@ -117,13 +118,7 @@ function ProtectedPage({
   }
 
   if (path === "/settings") {
-    return (
-      <PlaceholderPage
-        title="Settings"
-        eyebrow="Protected route"
-        description="This route is reserved for a later frontend ticket."
-      />
-    );
+    return <SettingsPage />;
   }
 
   if (path === "/admin") {
