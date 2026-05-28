@@ -4,7 +4,7 @@ import { asRecord, readArray, readString } from "../api/normalize";
 import type { DashboardStatusItem, DashboardStatusTone } from "./dashboardTypes";
 
 const dashboardMode = import.meta.env.VITE_DASHBOARD_MODE || "local";
-const dashboardStatusPath = import.meta.env.VITE_DASHBOARD_STATUS_PATH;
+const dashboardStatusPath = import.meta.env.VITE_DASHBOARD_STATUS_PATH || "/api/v1/me/dashboard";
 
 export async function getUserDashboard(): Promise<UserDashboardReadModel | null> {
   if (dashboardMode === "api") {
@@ -15,10 +15,6 @@ export async function getUserDashboard(): Promise<UserDashboardReadModel | null>
 }
 
 async function getApiDashboard(): Promise<UserDashboardReadModel | null> {
-  if (!dashboardStatusPath) {
-    throw new Error("VITE_DASHBOARD_MODE=api requires VITE_DASHBOARD_STATUS_PATH.");
-  }
-
   const payload = await requestJson(dashboardStatusPath, { notFoundAsNull: true });
   return payload ? normalizeDashboard(payload) : null;
 }

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from premarket_operator.auth.api import router as auth_router
 from premarket_operator.core.config import get_settings
 from premarket_operator.core.time import trading_day_for
+from premarket_operator.dashboard.api import router as dashboard_router
 from premarket_operator.db.session import SessionLocal
 from premarket_operator.reports.api import router as reports_router
 from premarket_operator.settings.api import router as settings_router
@@ -22,6 +23,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(reports_router)
 app.include_router(settings_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/health")
