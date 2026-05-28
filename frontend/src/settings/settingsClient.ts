@@ -4,7 +4,7 @@ import { asRecord, readNullableString, readString } from "../api/normalize";
 import type { TelegramConnectionState } from "./settingsTypes";
 
 const settingsMode = import.meta.env.VITE_SETTINGS_MODE || "local";
-const settingsStatusPath = import.meta.env.VITE_SETTINGS_STATUS_PATH;
+const settingsStatusPath = import.meta.env.VITE_SETTINGS_STATUS_PATH || "/api/v1/me/settings";
 
 export async function getUserSettings(): Promise<UserSettingsReadModel | null> {
   if (settingsMode === "api") {
@@ -15,10 +15,6 @@ export async function getUserSettings(): Promise<UserSettingsReadModel | null> {
 }
 
 async function getApiSettings(): Promise<UserSettingsReadModel | null> {
-  if (!settingsStatusPath) {
-    throw new Error("VITE_SETTINGS_MODE=api requires VITE_SETTINGS_STATUS_PATH.");
-  }
-
   const payload = await requestJson(settingsStatusPath, { notFoundAsNull: true });
   return payload ? normalizeSettings(payload) : null;
 }
