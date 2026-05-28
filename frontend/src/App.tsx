@@ -9,6 +9,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { ReportDetailPage } from "./pages/ReportDetailPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { AdminPage } from "./pages/AdminPage";
 
 const publicRoutes = new Set(["/login", "/forgot-password", "/reset-password"]);
 
@@ -132,13 +133,7 @@ function ProtectedPage({
       );
     }
 
-    return (
-      <PlaceholderPage
-        title="Admin"
-        eyebrow="Protected route"
-        description="This route is reserved for a later frontend ticket."
-      />
-    );
+    return <AdminPage />;
   }
 
   return (
