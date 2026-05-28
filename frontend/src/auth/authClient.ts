@@ -13,9 +13,9 @@ const localSessionKey = "desk-propsaas.local-auth-user";
 
 const authMode = import.meta.env.VITE_AUTH_MODE || "local";
 const apiEndpoints = {
-  me: import.meta.env.VITE_AUTH_ME_PATH,
-  login: import.meta.env.VITE_AUTH_LOGIN_PATH,
-  logout: import.meta.env.VITE_AUTH_LOGOUT_PATH,
+  me: import.meta.env.VITE_AUTH_ME_PATH || import.meta.env.VITE_AUTH_SESSION_PATH || "/api/v1/auth/session",
+  login: import.meta.env.VITE_AUTH_LOGIN_PATH || "/api/v1/auth/login",
+  logout: import.meta.env.VITE_AUTH_LOGOUT_PATH || "/api/v1/auth/logout",
   forgotPassword: import.meta.env.VITE_AUTH_FORGOT_PASSWORD_PATH,
   resetPassword: import.meta.env.VITE_AUTH_RESET_PASSWORD_PATH,
 };

@@ -4,8 +4,8 @@ import { asRecord, readArray, readNullableString, readString } from "../api/norm
 import type { ReportDeliveryStatus } from "./reportTypes";
 
 const reportsMode = import.meta.env.VITE_REPORTS_MODE || "local";
-const reportsListPath = import.meta.env.VITE_REPORTS_LIST_PATH;
-const reportDetailPath = import.meta.env.VITE_REPORT_DETAIL_PATH;
+const reportsListPath = import.meta.env.VITE_REPORTS_LIST_PATH || "/api/v1/me/reports";
+const reportDetailPath = import.meta.env.VITE_REPORT_DETAIL_PATH || "/api/v1/me/reports/:reportId";
 
 const localReports: ReportDetail[] = [
   {

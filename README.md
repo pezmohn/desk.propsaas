@@ -30,4 +30,4 @@ npm install
 npm run dev
 ```
 
-Local development uses `VITE_AUTH_MODE=local` until backend auth endpoints are finalized.
+Local development can use `VITE_AUTH_MODE=local` for browser-only auth. Auth and report history also support API mode against the current backend read endpoints; see `frontend/README.md`.

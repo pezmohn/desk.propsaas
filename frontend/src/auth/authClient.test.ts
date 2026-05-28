@@ -15,11 +15,6 @@ function mockResponse(status: number, body?: unknown) {
 async function loadApiAuthClient() {
   vi.resetModules();
   vi.stubEnv("VITE_AUTH_MODE", "api");
-  vi.stubEnv("VITE_AUTH_ME_PATH", "/auth/me");
-  vi.stubEnv("VITE_AUTH_LOGIN_PATH", "/auth/login");
-  vi.stubEnv("VITE_AUTH_LOGOUT_PATH", "/auth/logout");
-  vi.stubEnv("VITE_AUTH_FORGOT_PASSWORD_PATH", "/auth/forgot");
-  vi.stubEnv("VITE_AUTH_RESET_PASSWORD_PATH", "/auth/reset");
   return (await import("./authClient")).authClient;
 }
 
@@ -34,6 +29,27 @@ afterEach(() => {
 });
 
 describe("authClient API mode", () => {
+  it("reads the current user from the authenticated backend session endpoint", async () => {
+    const authClient = await loadApiAuthClient();
+    mockResponse(200, {
+      id: "user-1",
+      email: "user@example.com",
+      displayName: "User One",
+      role: "user",
+    });
+
+    await expect(authClient.getCurrentUser()).resolves.toEqual({
+      id: "user-1",
+      email: "user@example.com",
+      displayName: "User One",
+      role: "user",
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/auth/session",
+      expect.objectContaining({ credentials: "include", method: "GET" }),
+    );
+  });
+
   it("treats getCurrentUser 401 as logged out", async () => {
     const authClient = await loadApiAuthClient();
     mockResponse(401);
@@ -55,6 +71,14 @@ describe("authClient API mode", () => {
     mockResponse(401);
 
     await expect(authClient.logout()).rejects.toMatchObject({ kind: "unauthorized" });
+  });
+
+  it("does not convert optional auth mutation 401s into success when endpoints are configured", async () => {
+    vi.stubEnv("VITE_AUTH_FORGOT_PASSWORD_PATH", "/auth/forgot");
+    vi.stubEnv("VITE_AUTH_RESET_PASSWORD_PATH", "/auth/reset");
+    const authClient = await loadApiAuthClient();
+    mockResponse(401);
+
     await expect(authClient.forgotPassword({ email: "a@example.com" })).rejects.toMatchObject({
       kind: "unauthorized",
     });
