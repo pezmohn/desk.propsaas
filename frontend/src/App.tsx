@@ -132,9 +132,9 @@ function ProtectedPage({
     if (!canAccessAdmin(userRole)) {
       return (
         <PlaceholderPage
-          title="Not found"
-          eyebrow="404"
-          description="This route is not part of the current frontend shell."
+          title="Access restricted"
+          eyebrow="403"
+          description="Your account does not have access to the admin operations view."
         />
       );
     }

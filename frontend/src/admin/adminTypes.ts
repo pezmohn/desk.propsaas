@@ -7,6 +7,8 @@ export type AdminLiveDayUserRow = {
   reportGenerated: boolean;
   reportSent: boolean;
   blocker: string | null;
+  reportStatus: string | null;
+  sentAt: string | null;
 };
 
 export type AdminLiveDaySummary = {

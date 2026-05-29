@@ -9,6 +9,7 @@ class Settings:
     app_env: str = "local"
     app_timezone: str = "America/New_York"
     telegram_bot_token: str | None = None
+    telegram_bot_username: str | None = None
     telegram_dry_run: bool = True
     auth_session_cookie_name: str = "desk_propsaas_session"
     auth_session_days: int = 14
@@ -25,6 +26,7 @@ def get_settings() -> Settings:
         app_env=app_env,
         app_timezone=os.getenv("APP_TIMEZONE", Settings.app_timezone),
         telegram_bot_token=os.getenv("TELEGRAM_BOT_TOKEN") or None,
+        telegram_bot_username=_normalize_bot_username(os.getenv("TELEGRAM_BOT_USERNAME")),
         telegram_dry_run=os.getenv("TELEGRAM_DRY_RUN", "true").lower() in {"1", "true", "yes"},
         auth_session_cookie_name=os.getenv(
             "AUTH_SESSION_COOKIE_NAME",
@@ -49,3 +51,10 @@ def _csv_env(raw: str | None, default: tuple[str, ...]) -> tuple[str, ...]:
     if raw is None:
         return default
     return tuple(item.strip() for item in raw.split(",") if item.strip())
+
+
+def _normalize_bot_username(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    normalized = raw.strip().lstrip("@")
+    return normalized or None

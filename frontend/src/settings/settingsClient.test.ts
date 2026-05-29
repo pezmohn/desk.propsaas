@@ -166,4 +166,34 @@ describe("settingsClient API mode", () => {
       kind: "unauthorized",
     });
   });
+
+  it("starts Telegram linking through the authenticated backend endpoint", async () => {
+    const { startTelegramLink } = await loadApiSettingsClient();
+    mockResponse(200, {
+      expiresAt: "2026-05-29T12:15:00+00:00",
+      startCommand: "/start link_abc123",
+      deepLink: "https://t.me/premarket1984_bot?start=link_abc123",
+      instructions: "Open the Telegram bot and send the start command shown here.",
+    });
+
+    await expect(startTelegramLink()).resolves.toEqual({
+      expiresAt: "2026-05-29T12:15:00+00:00",
+      startCommand: "/start link_abc123",
+      deepLink: "https://t.me/premarket1984_bot?start=link_abc123",
+      instructions: "Open the Telegram bot and send the start command shown here.",
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/me/telegram-link",
+      expect.objectContaining({ credentials: "include", method: "POST" }),
+    );
+  });
+
+  it("does not convert unauthorized Telegram link starts into success", async () => {
+    const { startTelegramLink } = await loadApiSettingsClient();
+    mockResponse(401);
+
+    await expect(startTelegramLink()).rejects.toMatchObject({
+      kind: "unauthorized",
+    });
+  });
 });

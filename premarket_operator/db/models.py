@@ -30,6 +30,7 @@ class User(Base):
     email: Mapped[str | None] = mapped_column(String(320), unique=True)
     display_name: Mapped[str | None] = mapped_column(String(200))
     password_hash: Mapped[str | None] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(32), nullable=False, default="user")
     telegram_chat_id: Mapped[str | None] = mapped_column(String(64), unique=True)
     telegram_username: Mapped[str | None] = mapped_column(String(128))
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
@@ -42,6 +43,7 @@ class User(Base):
     daily_reports: Mapped[list[DailyReport]] = relationship(back_populates="user")
     user_plans: Mapped[list[UserPlan]] = relationship(back_populates="user")
     auth_sessions: Mapped[list[AuthSession]] = relationship(back_populates="user")
+    telegram_link_tokens: Mapped[list[TelegramLinkToken]] = relationship(back_populates="user")
 
 
 class AuthSession(Base):
@@ -60,6 +62,23 @@ class AuthSession(Base):
     created_at: Mapped[datetime] = timestamp_column()
 
     user: Mapped[User] = relationship(back_populates="auth_sessions")
+
+
+class TelegramLinkToken(Base):
+    __tablename__ = "telegram_link_tokens"
+    __table_args__ = (
+        Index("uq_telegram_link_tokens_token_hash", "token_hash", unique=True),
+        Index("ix_telegram_link_tokens_user_active", "user_id", "expires_at", "used_at"),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID_TYPE, ForeignKey("users.id"), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = timestamp_column()
+
+    user: Mapped[User] = relationship(back_populates="telegram_link_tokens")
 
 
 class Plan(Base):

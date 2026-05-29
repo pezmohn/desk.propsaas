@@ -23,3 +23,10 @@ export type UserSettingsUpdateInput = {
   displayName?: string | null;
   timezone?: string;
 };
+
+export type TelegramLinkStart = {
+  expiresAt: string;
+  startCommand: string;
+  deepLink: string | null;
+  instructions: string;
+};

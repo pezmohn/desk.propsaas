@@ -1,7 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
 import { apiErrorMessage } from "../api/apiClient";
-import { getUserSettings, updateUserSettings } from "../settings/settingsClient";
-import type { TelegramConnectionState, UserSettingsReadModel } from "../settings/settingsTypes";
+import { getUserSettings, startTelegramLink, updateUserSettings } from "../settings/settingsClient";
+import type {
+  TelegramConnectionState,
+  TelegramLinkStart,
+  UserSettingsReadModel,
+} from "../settings/settingsTypes";
+import { formatDateTime } from "./ReportsPage";
 
 type SettingsState =
   | { status: "loading" }
@@ -38,7 +43,7 @@ export function SettingsPage() {
       <div className="page-header settings-header">
         <p className="eyebrow">Settings</p>
         <h1 id="settings-title">Account and Telegram</h1>
-        <p>Read-only account basics and Telegram connection status.</p>
+        <p>Account basics, timezone, and Telegram connection status.</p>
       </div>
 
       {state.status === "loading" ? <SettingsLoading /> : null}
@@ -48,6 +53,7 @@ export function SettingsPage() {
         <SettingsContent
           settings={state.settings}
           onSaved={(settings) => setState({ status: "ready", settings })}
+          onReload={(settings) => setState({ status: "ready", settings })}
         />
       ) : null}
     </section>
@@ -57,9 +63,11 @@ export function SettingsPage() {
 function SettingsContent({
   settings,
   onSaved,
+  onReload,
 }: {
   settings: UserSettingsReadModel;
   onSaved(settings: UserSettingsReadModel): void;
+  onReload(settings: UserSettingsReadModel): void;
 }) {
   const [displayName, setDisplayName] = useState(settings.profile.displayName || "");
   const [timezone, setTimezone] = useState(settings.profile.timezone);
@@ -156,32 +164,116 @@ function SettingsContent({
       </section>
 
       <section className="settings-panel telegram-panel" aria-labelledby="telegram-title">
-        <div className="telegram-heading">
-          <div>
-            <p className="settings-panel-label">Telegram</p>
-            <h2 id="telegram-title">Connection status</h2>
-          </div>
-          <span className={`telegram-status ${settings.telegram.state}`}>
-            {formatTelegramState(settings.telegram.state)}
-          </span>
-        </div>
-
-        <dl className="settings-list">
-          <div>
-            <dt>Username</dt>
-            <dd>{settings.telegram.username ? `@${settings.telegram.username}` : "Not available"}</dd>
-          </div>
-          <div>
-            <dt>Chat identity</dt>
-            <dd>{settings.telegram.chatId || "Not available"}</dd>
-          </div>
-        </dl>
-
-        <div className={`telegram-guidance ${settings.telegram.state}`}>
-          <strong>{telegramGuidanceTitle(settings.telegram.state)}</strong>
-          <span>{settings.telegram.guidance}</span>
-        </div>
+        <TelegramConnectionPanel settings={settings} onReload={onReload} />
       </section>
+    </div>
+  );
+}
+
+export function TelegramConnectionPanel({
+  settings,
+  onReload,
+}: {
+  settings: UserSettingsReadModel;
+  onReload(settings: UserSettingsReadModel): void;
+}) {
+  const [linkState, setLinkState] = useState<
+    | { status: "idle" }
+    | { status: "loading" }
+    | { status: "ready"; link: TelegramLinkStart }
+    | { status: "error"; message: string }
+  >({ status: "idle" });
+
+  async function handleStartLink() {
+    setLinkState({ status: "loading" });
+    try {
+      const link = await startTelegramLink();
+      setLinkState({ status: "ready", link });
+    } catch (error) {
+      setLinkState({
+        status: "error",
+        message: apiErrorMessage(error, "Telegram link could not be started."),
+      });
+    }
+  }
+
+  async function handleRefresh() {
+    try {
+      const refreshed = await getUserSettings();
+      if (refreshed) {
+        onReload(refreshed);
+        if (refreshed.telegram.state === "connected") {
+          setLinkState({ status: "idle" });
+        }
+      }
+    } catch (error) {
+      setLinkState({
+        status: "error",
+        message: apiErrorMessage(error, "Telegram status could not be refreshed."),
+      });
+    }
+  }
+
+  return (
+    <>
+      <div className="telegram-heading">
+        <div>
+          <p className="settings-panel-label">Telegram</p>
+          <h2 id="telegram-title">Connection status</h2>
+        </div>
+        <span className={`telegram-status ${settings.telegram.state}`}>
+          {formatTelegramState(settings.telegram.state)}
+        </span>
+      </div>
+
+      <dl className="settings-list">
+        <div>
+          <dt>Username</dt>
+          <dd>{settings.telegram.username ? `@${settings.telegram.username}` : "Not available"}</dd>
+        </div>
+        <div>
+          <dt>Chat identity</dt>
+          <dd>{settings.telegram.chatId || "Not available"}</dd>
+        </div>
+      </dl>
+
+      <div className={`telegram-guidance ${settings.telegram.state}`}>
+        <strong>{telegramGuidanceTitle(settings.telegram.state)}</strong>
+        <span>{settings.telegram.guidance}</span>
+      </div>
+
+      <div className="telegram-actions">
+        <button
+          className="secondary-button"
+          disabled={linkState.status === "loading"}
+          onClick={handleStartLink}
+          type="button"
+        >
+          {settings.telegram.state === "connected" ? "Request relink" : "Connect Telegram"}
+        </button>
+        <button className="text-button" onClick={handleRefresh} type="button">
+          Refresh status
+        </button>
+      </div>
+
+      {linkState.status === "ready" ? <TelegramLinkInstructions link={linkState.link} /> : null}
+      {linkState.status === "error" ? <p className="form-error">{linkState.message}</p> : null}
+    </>
+  );
+}
+
+function TelegramLinkInstructions({ link }: { link: TelegramLinkStart }) {
+  return (
+    <div className="telegram-link-box">
+      <strong>Finish in Telegram</strong>
+      <span>{link.instructions}</span>
+      {link.deepLink ? (
+        <a className="secondary-button" href={link.deepLink} rel="noreferrer" target="_blank">
+          Open Telegram
+        </a>
+      ) : null}
+      <code>{link.startCommand}</code>
+      <small>Expires {formatDateTime(link.expiresAt)}</small>
     </div>
   );
 }

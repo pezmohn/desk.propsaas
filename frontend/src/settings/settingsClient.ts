@@ -1,10 +1,11 @@
-import type { UserSettingsReadModel, UserSettingsUpdateInput } from "./settingsTypes";
+import type { TelegramLinkStart, UserSettingsReadModel, UserSettingsUpdateInput } from "./settingsTypes";
 import { requestJson } from "../api/apiClient";
 import { asRecord, readNullableString, readString } from "../api/normalize";
 import type { TelegramConnectionState } from "./settingsTypes";
 
 const settingsMode = import.meta.env.VITE_SETTINGS_MODE || "local";
 const settingsStatusPath = import.meta.env.VITE_SETTINGS_STATUS_PATH || "/api/v1/me/settings";
+const telegramLinkPath = import.meta.env.VITE_TELEGRAM_LINK_PATH || "/api/v1/me/telegram-link";
 
 export async function getUserSettings(): Promise<UserSettingsReadModel | null> {
   if (settingsMode === "api") {
@@ -31,6 +32,21 @@ export async function updateUserSettings(
           : getLocalSettings().profile.displayName,
       timezone: update.timezone?.trim() || getLocalSettings().profile.timezone,
     },
+  };
+}
+
+export async function startTelegramLink(): Promise<TelegramLinkStart> {
+  if (settingsMode === "api") {
+    const payload = await requestJson(telegramLinkPath, { method: "POST" });
+    return normalizeTelegramLinkStart(payload);
+  }
+
+  return {
+    expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    startCommand: "/start link_local_preview",
+    deepLink: null,
+    instructions:
+      "Local preview only. API mode returns a short-lived Telegram link command for the real bot.",
   };
 }
 
@@ -92,6 +108,16 @@ function normalizeSettings(payload: unknown): UserSettingsReadModel {
       chatId: readNullableString(telegram, "chatId"),
       guidance: readString(telegram, "guidance", "Telegram connection status is unavailable."),
     },
+  };
+}
+
+function normalizeTelegramLinkStart(payload: unknown): TelegramLinkStart {
+  const record = asRecord(payload, "Telegram link start");
+  return {
+    expiresAt: readString(record, "expiresAt"),
+    startCommand: readString(record, "startCommand"),
+    deepLink: readNullableString(record, "deepLink"),
+    instructions: readString(record, "instructions"),
   };
 }
 

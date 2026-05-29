@@ -50,7 +50,7 @@ export function AdminPage() {
   );
 }
 
-function AdminContent({ liveDay }: { liveDay: AdminLiveDayReadModel }) {
+export function AdminContent({ liveDay }: { liveDay: AdminLiveDayReadModel }) {
   return (
     <>
       <div className="admin-run-summary">
@@ -73,10 +73,11 @@ function AdminContent({ liveDay }: { liveDay: AdminLiveDayReadModel }) {
             <tr>
               <th>User</th>
               <th>Eligible</th>
-              <th>Telegram linked</th>
-              <th>Report generated</th>
-              <th>Report sent</th>
+              <th>Telegram</th>
+              <th>Generated</th>
+              <th>Sent</th>
               <th>Blocker</th>
+              <th>Sent at</th>
             </tr>
           </thead>
           <tbody>
@@ -115,6 +116,13 @@ function AdminUserRow({ user }: { user: AdminLiveDayUserRow }) {
           <span className="admin-blocker">{user.blocker}</span>
         ) : (
           <span className="admin-muted">None</span>
+        )}
+      </td>
+      <td>
+        {user.sentAt ? (
+          <span>{formatDateTime(user.sentAt)}</span>
+        ) : (
+          <span className="admin-muted">{user.reportStatus || "Not sent"}</span>
         )}
       </td>
     </tr>

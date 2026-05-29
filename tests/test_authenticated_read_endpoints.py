@@ -101,6 +101,33 @@ def test_session_read_returns_authenticated_user() -> None:
     }
 
 
+def test_logout_revokes_session_and_returns_clean_no_content() -> None:
+    session = _session()
+    user = _create_user(session, email="one@example.com")
+    client = _client(session)
+    _authenticate(client, session, user)
+
+    response = client.post("/api/v1/auth/logout")
+
+    assert response.status_code == 204
+    assert response.content == b""
+    assert client.get("/api/v1/auth/session").status_code == 401
+
+
+def test_session_read_returns_persisted_admin_role() -> None:
+    session = _session()
+    user = _create_user(session, email="admin@example.com")
+    user.role = "admin"
+    session.commit()
+    client = _client(session)
+    _authenticate(client, session, user)
+
+    response = client.get("/api/v1/auth/session")
+
+    assert response.status_code == 200
+    assert response.json()["role"] == "admin"
+
+
 def test_report_list_is_scoped_to_authenticated_user() -> None:
     session = _session()
     user_one = _create_user(session, email="one@example.com")

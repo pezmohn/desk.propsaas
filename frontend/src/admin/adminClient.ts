@@ -2,8 +2,8 @@ import type { AdminLiveDayReadModel, AdminLiveDayUserRow } from "./adminTypes";
 import { requestJson } from "../api/apiClient";
 import { asRecord, readArray, readBoolean, readNullableString, readNumber, readString } from "../api/normalize";
 
-const adminMode = import.meta.env.VITE_ADMIN_MODE || "local";
-const adminLiveDayPath = import.meta.env.VITE_ADMIN_LIVE_DAY_PATH;
+const adminMode = import.meta.env.VITE_ADMIN_MODE || "api";
+const adminLiveDayPath = import.meta.env.VITE_ADMIN_LIVE_DAY_PATH || "/api/v1/admin/live-day";
 
 export async function getAdminLiveDay(): Promise<AdminLiveDayReadModel | null> {
   if (adminMode === "api") {
@@ -14,10 +14,6 @@ export async function getAdminLiveDay(): Promise<AdminLiveDayReadModel | null> {
 }
 
 async function getApiAdminLiveDay(): Promise<AdminLiveDayReadModel | null> {
-  if (!adminLiveDayPath) {
-    throw new Error("VITE_ADMIN_MODE=api requires VITE_ADMIN_LIVE_DAY_PATH.");
-  }
-
   const payload = await requestJson(adminLiveDayPath, { notFoundAsNull: true });
   return payload ? normalizeAdminLiveDay(payload) : null;
 }
@@ -33,6 +29,8 @@ function getLocalAdminLiveDay(): AdminLiveDayReadModel {
       reportGenerated: true,
       reportSent: true,
       blocker: null,
+      reportStatus: "sent",
+      sentAt: new Date().toISOString(),
     },
     {
       userId: "local-user-2",
@@ -43,6 +41,8 @@ function getLocalAdminLiveDay(): AdminLiveDayReadModel {
       reportGenerated: false,
       reportSent: false,
       blocker: "Telegram not linked",
+      reportStatus: null,
+      sentAt: null,
     },
     {
       userId: "local-user-3",
@@ -53,6 +53,8 @@ function getLocalAdminLiveDay(): AdminLiveDayReadModel {
       reportGenerated: true,
       reportSent: false,
       blocker: "Report generated but not sent",
+      reportStatus: "generated",
+      sentAt: null,
     },
   ];
 
@@ -89,6 +91,8 @@ function normalizeAdminUser(value: unknown): AdminLiveDayUserRow {
     reportGenerated: readBoolean(record, "reportGenerated"),
     reportSent: readBoolean(record, "reportSent"),
     blocker: readNullableString(record, "blocker"),
+    reportStatus: readNullableString(record, "reportStatus"),
+    sentAt: readNullableString(record, "sentAt"),
   };
 }
 

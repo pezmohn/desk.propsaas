@@ -69,18 +69,19 @@ def logout(
     response: Response,
     session: Session = Depends(get_db_session),
     settings: Settings = Depends(get_settings),
-) -> Response:
+) -> None:
     token = request.cookies.get(settings.auth_session_cookie_name)
     revoke_auth_session(session, token=token)
     session.commit()
     response.delete_cookie(key=settings.auth_session_cookie_name, path="/")
-    return response
+    return None
 
 
 def _auth_user_response(user: User) -> AuthUserResponse:
+    role = user.role if user.role in {"user", "admin"} else "user"
     return AuthUserResponse(
         id=str(user.id),
         email=user.email or "",
         displayName=user.display_name,
-        role="user",
+        role=role,
     )

@@ -154,6 +154,14 @@ input:focus {
   padding: 0;
 }
 
+.text-button {
+  background: transparent;
+  border: 0;
+  color: #0f6b57;
+  font-weight: 800;
+  padding: 8px 0;
+}
+
 .form-error {
   background: #fff3ef;
   border: 1px solid #f0b7a3;
@@ -730,6 +738,42 @@ input:focus {
 .telegram-guidance.incomplete {
   background: #f4f6f1;
   color: #38433b;
+}
+
+.telegram-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.telegram-link-box {
+  background: #f7faf7;
+  border: 1px solid #d9e3da;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.telegram-link-box code {
+  background: #1d2520;
+  border-radius: 6px;
+  color: #ffffff;
+  display: block;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  padding: 10px 12px;
+}
+
+.telegram-link-box small {
+  color: #637063;
+  font-weight: 700;
+}
+
+.telegram-link-box .secondary-button {
+  justify-self: start;
+  text-decoration: none;
 }
 
 .settings-skeleton span,
