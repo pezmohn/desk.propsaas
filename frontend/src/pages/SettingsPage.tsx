@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { apiErrorMessage } from "../api/apiClient";
-import { getUserSettings } from "../settings/settingsClient";
+import { getUserSettings, updateUserSettings } from "../settings/settingsClient";
 import type { TelegramConnectionState, UserSettingsReadModel } from "../settings/settingsTypes";
 
 type SettingsState =
@@ -44,31 +44,96 @@ export function SettingsPage() {
       {state.status === "loading" ? <SettingsLoading /> : null}
       {state.status === "empty" ? <SettingsEmpty /> : null}
       {state.status === "error" ? <SettingsError message={state.message} /> : null}
-      {state.status === "ready" ? <SettingsContent settings={state.settings} /> : null}
+      {state.status === "ready" ? (
+        <SettingsContent
+          settings={state.settings}
+          onSaved={(settings) => setState({ status: "ready", settings })}
+        />
+      ) : null}
     </section>
   );
 }
 
-function SettingsContent({ settings }: { settings: UserSettingsReadModel }) {
+function SettingsContent({
+  settings,
+  onSaved,
+}: {
+  settings: UserSettingsReadModel;
+  onSaved(settings: UserSettingsReadModel): void;
+}) {
+  const [displayName, setDisplayName] = useState(settings.profile.displayName || "");
+  const [timezone, setTimezone] = useState(settings.profile.timezone);
+  const [saveState, setSaveState] = useState<
+    | { status: "idle" }
+    | { status: "saving" }
+    | { status: "success"; message: string }
+    | { status: "error"; message: string }
+  >({ status: "idle" });
+
+  useEffect(() => {
+    setDisplayName(settings.profile.displayName || "");
+    setTimezone(settings.profile.timezone);
+  }, [settings.profile.displayName, settings.profile.timezone]);
+
+  async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaveState({ status: "saving" });
+
+    try {
+      const updated = await updateUserSettings({
+        displayName,
+        timezone,
+      });
+      onSaved(updated);
+      setSaveState({ status: "success", message: "Settings saved." });
+    } catch (error) {
+      setSaveState({
+        status: "error",
+        message: apiErrorMessage(error, "Settings could not be saved."),
+      });
+    }
+  }
+
   return (
     <div className="settings-grid">
       <section className="settings-panel" aria-labelledby="profile-title">
         <p className="settings-panel-label">Profile</p>
         <h2 id="profile-title">Profile basics</h2>
-        <dl className="settings-list">
-          <div>
-            <dt>Email</dt>
-            <dd>{settings.profile.email}</dd>
+        <form className="settings-form" onSubmit={handleProfileSubmit}>
+          <label>
+            Email
+            <input disabled type="email" value={settings.profile.email} />
+          </label>
+          <label>
+            Display name
+            <input
+              autoComplete="name"
+              maxLength={200}
+              onChange={(event) => setDisplayName(event.target.value)}
+              value={displayName}
+            />
+          </label>
+          <label>
+            Timezone
+            <input
+              autoComplete="off"
+              onChange={(event) => setTimezone(event.target.value)}
+              required
+              value={timezone}
+            />
+          </label>
+          {saveState.status === "success" ? <p className="notice">{saveState.message}</p> : null}
+          {saveState.status === "error" ? <p className="form-error">{saveState.message}</p> : null}
+          <div className="settings-actions">
+            <button
+              className="primary-button"
+              disabled={saveState.status === "saving"}
+              type="submit"
+            >
+              {saveState.status === "saving" ? "Saving..." : "Save settings"}
+            </button>
           </div>
-          <div>
-            <dt>Name</dt>
-            <dd>{settings.profile.displayName || "Not set"}</dd>
-          </div>
-          <div>
-            <dt>Timezone</dt>
-            <dd>{settings.profile.timezone}</dd>
-          </div>
-        </dl>
+        </form>
       </section>
 
       <section className="settings-panel" aria-labelledby="account-title">

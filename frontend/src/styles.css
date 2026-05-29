@@ -22,6 +22,12 @@ input {
   font: inherit;
 }
 
+input:disabled {
+  color: #637063;
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 button {
   cursor: pointer;
 }
@@ -655,6 +661,16 @@ input:focus {
   font-weight: 700;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.settings-form {
+  display: grid;
+  gap: 14px;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-start;
 }
 
 .telegram-panel {

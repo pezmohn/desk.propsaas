@@ -1,4 +1,4 @@
-import type { UserSettingsReadModel } from "./settingsTypes";
+import type { UserSettingsReadModel, UserSettingsUpdateInput } from "./settingsTypes";
 import { requestJson } from "../api/apiClient";
 import { asRecord, readNullableString, readString } from "../api/normalize";
 import type { TelegramConnectionState } from "./settingsTypes";
@@ -14,9 +14,37 @@ export async function getUserSettings(): Promise<UserSettingsReadModel | null> {
   return getLocalSettings();
 }
 
+export async function updateUserSettings(
+  update: UserSettingsUpdateInput,
+): Promise<UserSettingsReadModel> {
+  if (settingsMode === "api") {
+    return updateApiSettings(update);
+  }
+
+  return {
+    ...getLocalSettings(),
+    profile: {
+      ...getLocalSettings().profile,
+      displayName:
+        Object.prototype.hasOwnProperty.call(update, "displayName")
+          ? normalizeLocalDisplayName(update.displayName)
+          : getLocalSettings().profile.displayName,
+      timezone: update.timezone?.trim() || getLocalSettings().profile.timezone,
+    },
+  };
+}
+
 async function getApiSettings(): Promise<UserSettingsReadModel | null> {
   const payload = await requestJson(settingsStatusPath, { notFoundAsNull: true });
   return payload ? normalizeSettings(payload) : null;
+}
+
+async function updateApiSettings(update: UserSettingsUpdateInput): Promise<UserSettingsReadModel> {
+  const payload = await requestJson(settingsStatusPath, {
+    method: "PATCH",
+    body: update,
+  });
+  return normalizeSettings(payload);
 }
 
 function getLocalSettings(): UserSettingsReadModel {
@@ -65,6 +93,13 @@ function normalizeSettings(payload: unknown): UserSettingsReadModel {
       guidance: readString(telegram, "guidance", "Telegram connection status is unavailable."),
     },
   };
+}
+
+function normalizeLocalDisplayName(value: string | null | undefined): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  return value.trim() || null;
 }
 
 function normalizeTelegramState(value: string): TelegramConnectionState {

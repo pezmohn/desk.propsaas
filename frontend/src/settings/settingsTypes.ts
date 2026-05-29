@@ -18,3 +18,8 @@ export type UserSettingsReadModel = {
     guidance: string;
   };
 };
+
+export type UserSettingsUpdateInput = {
+  displayName?: string | null;
+  timezone?: string;
+};

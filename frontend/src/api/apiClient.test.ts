@@ -47,4 +47,16 @@ describe("requestJson", () => {
 
     await expect(requestJson("/missing", { notFoundAsNull: true })).resolves.toBeNull();
   });
+
+  it("extracts validation messages from structured API errors", async () => {
+    mockResponse(422, {
+      detail: [{ msg: "Timezone must be a valid IANA timezone." }],
+    });
+
+    await expect(requestJson("/settings", { method: "PATCH", body: {} })).rejects.toMatchObject({
+      kind: "serverError",
+      message: "Timezone must be a valid IANA timezone.",
+      status: 422,
+    } satisfies Partial<ApiError>);
+  });
 });

@@ -51,7 +51,7 @@ export async function requestJson(
   }
 
   if (!response.ok) {
-    const message = await response.text();
+    const message = await readErrorMessage(response);
     throw new ApiError(
       "serverError",
       response.status,
@@ -72,4 +72,28 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
   }
 
   return error instanceof Error ? error.message : fallback;
+}
+
+async function readErrorMessage(response: Response): Promise<string> {
+  const text = await response.text();
+  if (!text) {
+    return "";
+  }
+
+  try {
+    const payload = JSON.parse(text) as { detail?: unknown };
+    if (typeof payload.detail === "string") {
+      return payload.detail;
+    }
+    if (Array.isArray(payload.detail)) {
+      const first = payload.detail[0] as { msg?: unknown } | undefined;
+      if (typeof first?.msg === "string") {
+        return first.msg;
+      }
+    }
+  } catch {
+    return text;
+  }
+
+  return text;
 }

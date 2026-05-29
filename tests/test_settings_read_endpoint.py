@@ -126,3 +126,158 @@ def test_settings_read_keeps_missing_plan_and_telegram_truth_unknown() -> None:
     assert payload["telegram"]["state"] == "not_connected"
     assert payload["telegram"]["username"] is None
     assert payload["telegram"]["chatId"] is None
+
+
+def test_settings_update_requires_authentication() -> None:
+    session = _session()
+    client = _client(session)
+
+    response = client.patch("/api/v1/me/settings", json={"displayName": "Updated"})
+
+    assert response.status_code == 401
+
+
+def test_settings_update_changes_display_name_and_timezone_for_current_user() -> None:
+    session = _session()
+    user = User(
+        email="one@example.com",
+        display_name="One",
+        status="active",
+        timezone="America/New_York",
+        telegram_chat_id="12345",
+    )
+    other_user = User(
+        email="two@example.com",
+        display_name="Two",
+        status="active",
+        timezone="America/New_York",
+    )
+    plan = Plan(code="starter", name="Starter", daily_reports_enabled=True, is_active=True)
+    session.add_all([user, other_user, plan])
+    session.flush()
+    session.add(
+        UserPlan(
+            user_id=user.id,
+            plan_id=plan.id,
+            status="active",
+            started_at=datetime(2026, 5, 28, 12, 0, tzinfo=UTC),
+        )
+    )
+    session.commit()
+
+    client = _client(session)
+    _authenticate(client, session, user)
+
+    response = client.patch(
+        "/api/v1/me/settings",
+        json={"displayName": "Updated One", "timezone": "Europe/Berlin"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["profile"] == {
+        "email": "one@example.com",
+        "displayName": "Updated One",
+        "timezone": "Europe/Berlin",
+    }
+    session.refresh(user)
+    session.refresh(other_user)
+    assert user.display_name == "Updated One"
+    assert user.timezone == "Europe/Berlin"
+    assert other_user.display_name == "Two"
+    assert other_user.timezone == "America/New_York"
+
+    reread_response = client.get("/api/v1/me/settings")
+    assert reread_response.status_code == 200
+    assert reread_response.json()["profile"] == {
+        "email": "one@example.com",
+        "displayName": "Updated One",
+        "timezone": "Europe/Berlin",
+    }
+
+
+def test_settings_update_supports_partial_display_name_clear() -> None:
+    session = _session()
+    user = User(
+        email="one@example.com",
+        display_name="One",
+        status="active",
+        timezone="America/New_York",
+    )
+    session.add(user)
+    session.commit()
+
+    client = _client(session)
+    _authenticate(client, session, user)
+
+    response = client.patch("/api/v1/me/settings", json={"displayName": "   "})
+
+    assert response.status_code == 200
+    assert response.json()["profile"] == {
+        "email": "one@example.com",
+        "displayName": None,
+        "timezone": "America/New_York",
+    }
+    session.refresh(user)
+    assert user.display_name is None
+
+
+def test_settings_update_rejects_invalid_timezone() -> None:
+    session = _session()
+    user = User(
+        email="one@example.com",
+        display_name="One",
+        status="active",
+        timezone="America/New_York",
+    )
+    session.add(user)
+    session.commit()
+
+    client = _client(session)
+    _authenticate(client, session, user)
+
+    response = client.patch("/api/v1/me/settings", json={"timezone": "Not/AZone"})
+
+    assert response.status_code == 422
+    session.refresh(user)
+    assert user.timezone == "America/New_York"
+
+
+def test_settings_update_rejects_null_timezone() -> None:
+    session = _session()
+    user = User(
+        email="one@example.com",
+        display_name="One",
+        status="active",
+        timezone="America/New_York",
+    )
+    session.add(user)
+    session.commit()
+
+    client = _client(session)
+    _authenticate(client, session, user)
+
+    response = client.patch("/api/v1/me/settings", json={"timezone": None})
+
+    assert response.status_code == 422
+    session.refresh(user)
+    assert user.timezone == "America/New_York"
+
+
+def test_settings_update_rejects_unknown_fields() -> None:
+    session = _session()
+    user = User(
+        email="one@example.com",
+        display_name="One",
+        status="active",
+        timezone="America/New_York",
+    )
+    session.add(user)
+    session.commit()
+
+    client = _client(session)
+    _authenticate(client, session, user)
+
+    response = client.patch("/api/v1/me/settings", json={"planName": "Pro"})
+
+    assert response.status_code == 422

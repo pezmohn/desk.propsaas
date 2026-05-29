@@ -111,4 +111,59 @@ describe("settingsClient API mode", () => {
 
     await expect(getUserSettings()).rejects.toMatchObject({ kind: "unauthorized" });
   });
+
+  it("updates settings through the authenticated backend settings endpoint", async () => {
+    const { updateUserSettings } = await loadApiSettingsClient();
+    mockResponse(200, {
+      profile: {
+        email: "one@example.com",
+        displayName: "Updated One",
+        timezone: "Europe/Berlin",
+      },
+      account: {
+        status: "Active",
+        planName: "Starter",
+        planStatus: "Active",
+      },
+      telegram: {
+        state: "connected",
+        username: "desk_user",
+        chatId: "12345",
+        guidance: "Telegram is linked for report delivery.",
+      },
+    });
+
+    await expect(
+      updateUserSettings({
+        displayName: "Updated One",
+        timezone: "Europe/Berlin",
+      }),
+    ).resolves.toMatchObject({
+      profile: {
+        displayName: "Updated One",
+        timezone: "Europe/Berlin",
+      },
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/me/settings",
+      expect.objectContaining({
+        body: JSON.stringify({
+          displayName: "Updated One",
+          timezone: "Europe/Berlin",
+        }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
+      }),
+    );
+  });
+
+  it("does not convert unauthorized settings updates into success", async () => {
+    const { updateUserSettings } = await loadApiSettingsClient();
+    mockResponse(401);
+
+    await expect(updateUserSettings({ displayName: "Updated One" })).rejects.toMatchObject({
+      kind: "unauthorized",
+    });
+  });
 });
